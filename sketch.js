@@ -1,6 +1,7 @@
-let monthSlider
+let monthSlider, button
 let months
 let selectedMonth = '2018-12'
+let isAutoplayOn = true
 
 let w
 let h
@@ -32,6 +33,7 @@ function setup() {
     canvas = createCanvas(w, h)
 
     sliderSetup()
+    buttonSetup()
 
     dataContainer = d3.select('body').append('custom');
     refresh();
@@ -41,6 +43,9 @@ function setup() {
 }
 
 function incrementSelectedMonth() {
+    if (!isAutoplayOn) {
+        return
+    }
     const monthIndex = months.indexOf(selectedMonth)
     const nextMonthIndex = (monthIndex + 1) % months.length
     selectedMonth = months[nextMonthIndex]
@@ -50,7 +55,6 @@ function incrementSelectedMonth() {
 function getUniqueColorForEachArtists() {
     const allArtists = new Set()
 
-    // Use top5Artists to get all artists
     for (const month in top5Artists) {
         top5Artists[month].forEach(([artist, minutes]) => allArtists.add(artist))
     }
@@ -59,8 +63,6 @@ function getUniqueColorForEachArtists() {
         .map(value => ({ value, sort: Math.random() }))
         .sort((a, b) => a.sort - b.sort)
         .map(({ value }) => value)
-
-    // Map each artist to a unique color
 
     const colors = {}
     const hueStep = 360 / allArtists.size
@@ -82,11 +84,8 @@ function refresh() {
     x = d3.scaleLinear([0, 5], [graphXMargin, graphWidth + graphXMargin])
     y = d3.scaleLinear([0, maxValue + 50], [graphHeight + graphYMargin, graphTopEdge])
 
-    //bind generated data to custom dom elements
     var bars = dataContainer.selectAll('.bars').data(values);
 
-    //store variables for visual representation. These will be used
-    //later by p5 methods.
     bars
         .enter()
         .append('rect')
@@ -124,7 +123,11 @@ function recalcDimensions() {
 
 function resizeSlider() {
     monthSlider.position(graphXMargin, 20)
-    monthSlider.size(graphWidth)
+    monthSlider.size(graphWidth - 70)
+}
+
+function resizeButton() {
+    button.position(graphWidth + graphXMargin - 50, 20)
 }
 
 function sliderSetup() {
@@ -136,12 +139,22 @@ function sliderSetup() {
     monthSlider.changed(() => {
         selectedMonth = months[monthSlider.value()]
     })
+    monthSlider.mouseClicked(() => {
+        isAutoplayOn = false
+    })
+}
+
+function buttonSetup() {
+    button = createButton('⏯️')
+    resizeButton()
+    button.mousePressed(() => isAutoplayOn = !isAutoplayOn)
 }
 
 function windowResized() {
     recalcDimensions()
     resizeCanvas(w, h)
     resizeSlider()
+    resizeButton()
 }
 
 function drawMonthText() {
@@ -157,22 +170,11 @@ function drawMonthText() {
     text(monthText, w / 2, 50)
 }
 
-// function drawFunction() {
-//     background(255)
-
-//     const monthIndex = monthSlider.value()
-//     const selectedMonth = months[monthIndex]
-
-//     drawMonthText(selectedMonth)
-//     drawGraph(selectedMonth)
-// }
-
 function drawFunction() {
     background(255);
     drawMonthText(selectedMonth)
     noStroke();
 
-    //p5.dom
     var barsHTML = document.getElementsByClassName('bars');
     var bars = Array.from(barsHTML).map(bar => new p5.Element(bar));
 
@@ -180,13 +182,7 @@ function drawFunction() {
         var thisbar = bars[i];
         push();
         translate(thisbar.attribute('x'), thisbar.attribute('y'));
-
-        // if ((mouseX > thisbar.attribute('x')) && (mouseX < (int(thisbar.attribute('x')) + int(thisbar.attribute('dx'))))) {
-        //     fill('brown');
-        // } else {
-        //     fill('red');
-        // }
-        fill(color(artistColors[thisbar.attribute('artist')]));
+        fill(color('#1DB954'));
         rect(1, 1, thisbar.attribute('dx'), thisbar.attribute('height'));
         fill('white')
         text(int(thisbar.attribute('value')), thisbar.attribute('dx') / 2 + 2, 15);
@@ -199,33 +195,6 @@ function drawFunction() {
     noStroke();
 }
 
-function drawGraph(month) {
-    stroke(0)
-    line(graphXMargin, graphHeight + graphYMargin, graphWidth + graphXMargin, graphHeight + graphYMargin) // x axis
-    line(graphXMargin, graphTopEdge, graphXMargin, graphHeight + graphYMargin) // y axis
-
-    // // Add artist names below bars
-    // textAlign(CENTER)
-    // textSize(12)
-    // fill(0)
-    // top5Artists.forEach(([artist, minutes], index) => {
-    //     const x = graphMargin + (index * barWidth) + barWidth / 2
-    //     const y = height - graphMargin + 20
-    //     text(artist, x, y)
-    // })
-
-    // // Add minutes above bars
-    // textAlign(CENTER)
-    // textSize(12)
-    // fill(0)
-    // top5Artists.forEach(([artist, minutes], index) => {
-    //     const x = graphMargin + (index * barWidth) + barWidth / 2
-    //     const y = height - graphMargin - (minutes / maxMinutes) * graphHeight - 10
-    //     text(minutes + ' min', x, y)   
-    // })
-}
-
-// Calculate top 5 artists for every month from cumulative data
 function calculateTop5Artists() {
     const top5Artists = {}
 
@@ -237,7 +206,6 @@ function calculateTop5Artists() {
         top5Artists[month] = sortedArtists.slice(0, 5)
     }
 
-    // convert milliseconds to minutes
     for (const month in top5Artists) {
         top5Artists[month] = top5Artists[month].map(([artist, ms]) => [artist, Math.round(ms / 60000)])
     }
