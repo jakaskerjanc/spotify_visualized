@@ -79,10 +79,17 @@ function getUniqueColorForEachArtists() {
 function refresh() {
     var values, maxValue;
     values = top5Artists[selectedMonth].map(([artist, minutes]) => minutes)
+    artists = top5Artists[selectedMonth].map(([artist, minutes]) => artist)
     maxValue = Math.max(...values)
 
-    x = d3.scaleLinear([0, 5], [graphXMargin, graphWidth + graphXMargin])
-    y = d3.scaleLinear([0, maxValue + 50], [graphHeight + graphYMargin, graphTopEdge])
+    x = d3.scaleBand()
+        .domain(artists)
+        .range([graphXMargin, graphWidth + graphXMargin])
+        .padding(0.1)
+
+    y = d3.scaleLinear()
+        .domain([0, maxValue + 50])
+        .range([graphHeight + graphYMargin, graphTopEdge]);
 
     var bars = dataContainer.selectAll('.bars').data(values);
 
@@ -91,8 +98,8 @@ function refresh() {
         .append('rect')
         .attr('height', 0)
         .attr('class', 'bars')
-        .attr('x', function (d, i) { return x(i) })
-        .attr('dx', graphWidth / 5)
+        .attr('x', function (d, i) { return x(top5Artists[selectedMonth][i][0]) })
+        .attr('dx', x.bandwidth())
         .attr('y', function (d) { return graphHeight; })
         .attr('value', function (d) { return d; })
         .attr('artist', function (d, i) { return top5Artists[selectedMonth][i][0]; })
@@ -102,9 +109,9 @@ function refresh() {
         .duration(1000)
         .delay(function (d, i) { return i * 50; })
         .attr('height', function (d) { return graphHeight - y(d); })
-        .attr('x', function (d, i) { return x(i) })
+        .attr('x', function (d, i) { return x(top5Artists[selectedMonth][i][0]) })
         .attr('y', function (d) { return y(d); })
-        .attr('dx', graphWidth / 5)
+        .attr('dx', x.bandwidth())
         .attr('value', function (d) { return d; })
         .attr('artist', function (d, i) { return top5Artists[selectedMonth][i][0]; })
 }
