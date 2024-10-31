@@ -1,0 +1,16 @@
+{
+  "version": "4",
+  "specifiers": {
+    "jsr:@std/collections@^1.0.8": "1.0.8"
+  },
+  "jsr": {
+    "@std/collections@1.0.8": {
+      "integrity": "de76692f9121838711b1d2fb5042619c074db26905a87b58cff56cfe1bd6d6d0"
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@std/collections@^1.0.8"
+    ]
+  }
+}
