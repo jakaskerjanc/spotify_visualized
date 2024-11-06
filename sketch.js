@@ -1,4 +1,3 @@
-// Convert cumulativeListeningTime to the same format as data
 const data = _.flatten(Object.entries(cumulativeListeningTime).map(([date, artistMinuteMap]) => {
     return Object.entries(artistMinuteMap).map(([artist, minutes]) => { return { date, name: artist, value: Math.round(minutes / 60000) } })
 }))
@@ -27,7 +26,7 @@ const y = d3.scaleBand()
 
 const tickFormat = undefined
 
-const formatDate = d3.utcFormat("%Y-%m")
+const formatDate = d3.utcFormat("%M %Y")
 
 d3.select('body').append('svg');
 const svg = d3.select("svg")
@@ -53,6 +52,8 @@ for ([[ka, a], [kb, b]] of d3.pairs(datevalues)) {
 }
 keyframes.push([new Date(kb), rank(name => b.get(name) || 0)]);
 
+const allPossibleDates = keyframes.map(([date]) => date)
+
 const nameframes = d3.groups(keyframes.flatMap(([, data]) => data), d => d.name)
 const prev = new Map(nameframes.flatMap(([, data]) => d3.pairs(data, (a, b) => [b, a])))
 const next = new Map(nameframes.flatMap(([, data]) => d3.pairs(data)))
@@ -60,26 +61,65 @@ const next = new Map(nameframes.flatMap(([, data]) => d3.pairs(data)))
 const updateBars = bars(svg);
 const updateAxis = axis(svg);
 const updateLabels = labels(svg);
-const updateTicker = ticker(svg);
 
 const node = svg.node();
 
+const formatNumber = d3.format(",d")
+
+let currentKeyframeIndex = 0
+let stoppedKeyframeIndex
+let isAutoplayOn = true
+
 async function render() {
-    for (const keyframe of keyframes) {
-        const transition = svg.transition()
-            .duration(duration)
-            .ease(d3.easeLinear);
+    while (currentKeyframeIndex < keyframes.length && isAutoplayOn) {
+        const keyframe = keyframes[currentKeyframeIndex]
+        await animate(keyframe)
+        currentKeyframeIndex++
+    }
+}
 
-        // Extract the top bar’s value.
-        x.domain([0, keyframe[1][0].value]);
+async function animate(keyframe) {
+    const transition = svg.transition()
+        .duration(duration)
+        .ease(d3.easeLinear);
 
-        updateAxis(keyframe, transition);
-        updateBars(keyframe, transition);
-        updateLabels(keyframe, transition);
-        updateTicker(keyframe, transition);
+    x.domain([0, keyframe[1][0].value]);
 
-        // invalidation.then(() => svg.interrupt());
-        await transition.end();
+    updateAxis(keyframe, transition);
+    updateBars(keyframe, transition);
+    updateLabels(keyframe, transition);
+    // updateTicker(keyframe, transition);
+
+    // invalidation.then(() => svg.interrupt());
+    await transition.end();
+}
+
+function showChartForDate(date) {
+    const keyframeIndex = keyframes.findIndex(([keyframeDate]) => keyframeDate.getTime() === date.getTime())
+    if (keyframeIndex === -1) {
+        console.error(`No data for date ${date}`)
+        return
+    }
+    currentKeyframeIndex = keyframeIndex
+    animate(keyframes[currentKeyframeIndex])
+}
+
+function stopAnimation() {
+    stoppedKeyframeIndex = currentKeyframeIndex
+    isAutoplayOn = false
+}
+
+function startAnimation() {
+    currentKeyframeIndex = stoppedKeyframeIndex
+    isAutoplayOn = true
+    render()
+}
+
+function toggleAutoplay() {
+    if (isAutoplayOn) {
+        stopAnimation()
+    } else {
+        startAnimation()
     }
 }
 
@@ -164,21 +204,6 @@ function axis(svg) {
     };
 }
 
-function ticker(svg) {
-    const now = svg.append("text")
-        .style("font", `bold ${barSize}px var(--sans-serif)`)
-        .style("font-variant-numeric", "tabular-nums")
-        .attr("text-anchor", "end")
-        .attr("x", width - 6)
-        .attr("y", marginTop + barSize * (n - 0.45))
-        .attr("dy", "0.32em")
-        .text(formatDate(keyframes[0][0]));
-
-    return ([date], transition) => {
-        transition.end().then(() => now.text(formatDate(date)));
-    };
-}
-
 function rank(value) {
     const data = Array.from(names, name => ({ name, value: value(name) }));
     data.sort((a, b) => d3.descending(a.value, b.value));
@@ -186,4 +211,36 @@ function rank(value) {
     return data;
 }
 
-formatNumber = d3.format(",d")
+let slider, button
+
+function setup() {
+    const myCanvas = document.getElementById('myCanvas');
+    createCanvas(800, 80, myCanvas);
+
+    button = createButton('⏯️');
+    button.position(20, 18);
+    button.mousePressed(toggleAutoplay)
+
+    slider = createSlider(0, allPossibleDates.length - 1, 0, 1);
+    slider.input(() => {
+        showChartForDate(allPossibleDates[slider.value()])
+        stopAnimation()
+    })
+    slider.position(70, 20);
+    slider.size(500);
+}
+
+function draw() {
+    background(255);
+
+    drawDateText(allPossibleDates[currentKeyframeIndex])
+}
+
+function drawDateText(date) {
+    const formattedDate = date.toLocaleString('sl', { month: 'long', year: 'numeric' })
+    textSize(14)
+    fill(0)
+    text(formattedDate, 600, 35)
+
+    slider.value(currentKeyframeIndex)
+}
