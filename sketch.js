@@ -233,7 +233,8 @@ function setup() {
 function draw() {
     background(255);
 
-    drawDateText(allPossibleDates[currentKeyframeIndex])
+    const currentDate = allPossibleDates[currentKeyframeIndex] ? allPossibleDates[currentKeyframeIndex] : allPossibleDates[allPossibleDates.length - 1]
+    drawDateText(currentDate)
 }
 
 function drawDateText(date) {
