@@ -29,7 +29,7 @@ const svg = d3.select("svg")
     .attr("viewBox", [0, 0, width, height])
     .attr("width", width)
     .attr("height", height)
-    .attr("style", "max-width: 100%; height: auto; max-height: calc(100vh - 110px);");
+    .attr("style", "max-width: 100%; height: auto; max-height: calc(100vh - 120px);");
 
 svg.append("g")
     .attr("transform", `translate(${-width + 150}, -25)`)
@@ -126,8 +126,12 @@ function toggleAutoplay() {
 render()
 
 function getColor(artistName) {
-    const popularity = artistPopularity[artistName]
+    const popularity = getArtistPopularity(artistName)
     return d3.interpolateRgb.gamma(2.2)("purple", "orange")(1 - (popularity / 100))
+}
+
+function getArtistPopularity(artistName) {
+    return artistPopularity[artistName]
 }
 
 function bars(svg) {
@@ -143,7 +147,8 @@ function bars(svg) {
                 .attr("height", y.bandwidth())
                 .attr("x", x(0))
                 .attr("y", d => y((prev.get(d) || d).rank))
-                .attr("width", d => x((prev.get(d) || d).value) - x(0)),
+                .attr("width", d => x((prev.get(d) || d).value) - x(0))
+                .call(enter => enter.append("title").text(d => `Popularnost: ${getArtistPopularity(d.name)}`)),
             update => update,
             exit => exit.transition(transition).remove()
                 .attr("y", d => y((next.get(d) || d).rank))
@@ -216,14 +221,18 @@ function rank(value) {
     return data;
 }
 
-let slider, button
+let slider, button, roboto
+
+function preload() {
+    roboto = loadFont('./Roboto-Regular.ttf');
+}
 
 function setup() {
     const myCanvas = document.getElementById('myCanvas');
-    createCanvas(800, 60, myCanvas);
+    createCanvas(960, 60, myCanvas);
 
-    button = createButton('⏯️');
-    button.position(20, 18);
+    button = createButton('⏸️');
+    button.position(50, 18);
     button.mousePressed(toggleAutoplay)
 
     slider = createSlider(0, allPossibleDates.length - 1, 0, 1);
@@ -231,23 +240,30 @@ function setup() {
         showChartForDate(allPossibleDates[slider.value()])
         stopAnimation()
     })
-    slider.position(70, 20);
-    slider.size(500);
+    slider.position(100, 20);
+    slider.size(700);
+    slider.style('background', 'purple');
 }
 
 function draw() {
     background(255);
 
     const currentDate = allPossibleDates[currentKeyframeIndex] ? allPossibleDates[currentKeyframeIndex] : allPossibleDates[allPossibleDates.length - 1]
+    textSize(15)
+    fill(0)
+    textFont(roboto)
     drawDateText(currentDate)
+
+    if (isAutoplayOn) {
+        button.html('⏸️')
+    } else {
+        button.html('▶️')
+    }
 }
 
 function drawDateText(date) {
-    const formattedDate = date.toLocaleString('sl', { month: 'long', year: 'numeric' })
-    textSize(14)
-    fill(0)
-    text(formattedDate, 600, 35)
-
+    const formattedDate = _.capitalize(date.toLocaleString('sl', { month: 'long', year: 'numeric' }))
+    text(formattedDate, 850, 35)
     slider.value(currentKeyframeIndex)
 }
 
