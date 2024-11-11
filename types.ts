@@ -3,6 +3,12 @@ export type Track = string
 export type Album = string
 export type SpotifyTrackUri = string
 
+export type Month = string
+export type MinutesPlayed = number
+
+export type ArtistPlaytime = { [key: Artist]: MinutesPlayed }
+export type MonthlyArtistPlaytime = { [key: Month]: ArtistPlaytime }
+
 export type StreamingHistory = {
     date: string,
     artist: Artist,

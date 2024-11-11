@@ -1,10 +1,4 @@
-import { StreamingHistory, Artist } from './types.ts'
-
-type Month = string
-type MinutesPlayed = number
-
-type ArtistPlaytime = { [key: Artist]: MinutesPlayed }
-type MonthlyArtistPlaytime = { [key: Month]: ArtistPlaytime }
+import { StreamingHistory, MonthlyArtistPlaytime, ArtistPlaytime } from './types.ts'
 
 async function readCleanedData() {
     const data = await Deno.readTextFile('data/cleanedStreamingHistory.json')

@@ -4,16 +4,14 @@ const data = _.flatten(Object.entries(cumulativeListeningTime).map(([date, artis
 
 const names = new Set(data.map(d => d.name))
 
-const scale = d3.scaleOrdinal(d3.schemeTableau10);
-
 const n = 12
 const k = 10
-const duration = 200
+const duration = 150
 const barSize = 48
-const marginTop = 16
+const marginTop = 50
 const marginRight = 6
 const marginBottom = 6
-const marginLeft = 0
+const marginLeft = 5
 const height = marginTop + barSize * n + marginBottom
 const width = 960
 
@@ -26,14 +24,21 @@ const y = d3.scaleBand()
 
 const tickFormat = undefined
 
-const formatDate = d3.utcFormat("%M %Y")
-
 d3.select('body').append('svg');
 const svg = d3.select("svg")
     .attr("viewBox", [0, 0, width, height])
     .attr("width", width)
     .attr("height", height)
-    .attr("style", "max-width: 100%; height: auto;");
+    .attr("style", "max-width: 100%; height: auto; max-height: calc(100vh - 110px);");
+
+svg.append("g")
+    .attr("transform", `translate(${-width + 150}, -25)`)
+    .call((g) => g.append("text")
+        .attr("x", width)
+        .attr("y", marginTop - 4)
+        .attr("fill", "currentColor")
+        .attr("text-anchor", "end")
+        .text("Čas predvajanja (min)"));
 
 const datevalues = Array.from(d3.rollup(data, ([d]) => d.value, d => d.date, d => d.name))
     .map(([date, data]) => [new Date(date), data])
@@ -62,8 +67,6 @@ const updateBars = bars(svg);
 const updateAxis = axis(svg);
 const updateLabels = labels(svg);
 
-const node = svg.node();
-
 const formatNumber = d3.format(",d")
 
 let currentKeyframeIndex = 0
@@ -88,9 +91,6 @@ async function animate(keyframe) {
     updateAxis(keyframe, transition);
     updateBars(keyframe, transition);
     updateLabels(keyframe, transition);
-    // updateTicker(keyframe, transition);
-
-    // invalidation.then(() => svg.interrupt());
     await transition.end();
 }
 
@@ -125,6 +125,11 @@ function toggleAutoplay() {
 
 render()
 
+function getColor(artistName) {
+    const popularity = artistPopularity[artistName]
+    return d3.interpolateRgb.gamma(2.2)("purple", "orange")(1 - (popularity / 100))
+}
+
 function bars(svg) {
     let bar = svg.append("g")
         .attr("fill-opacity", 0.6)
@@ -134,7 +139,7 @@ function bars(svg) {
         .data(data.slice(0, n), d => d.name)
         .join(
             enter => enter.append("rect")
-                .attr("fill", d => scale(d.name))
+                .attr("fill", d => getColor(d.name))
                 .attr("height", y.bandwidth())
                 .attr("x", x(0))
                 .attr("y", d => y((prev.get(d) || d).rank))
@@ -194,7 +199,7 @@ function axis(svg) {
     const axis = d3.axisTop(x)
         .ticks(width / 160, tickFormat)
         .tickSizeOuter(0)
-        .tickSizeInner(-barSize * (n + y.padding()));
+        .tickSizeInner(-barSize * (n + y.padding()))
 
     return (_, transition) => {
         g.transition(transition).call(axis);
@@ -215,7 +220,7 @@ let slider, button
 
 function setup() {
     const myCanvas = document.getElementById('myCanvas');
-    createCanvas(800, 80, myCanvas);
+    createCanvas(800, 60, myCanvas);
 
     button = createButton('⏯️');
     button.position(20, 18);
@@ -245,3 +250,10 @@ function drawDateText(date) {
 
     slider.value(currentKeyframeIndex)
 }
+
+
+const legend = Legend(d3.scaleSequential([100, 0], d3.interpolateRgb.gamma(2.2)("purple", "orange")), {
+    title: "Popularnost izvajalca"
+})
+
+document.body.appendChild(legend)
