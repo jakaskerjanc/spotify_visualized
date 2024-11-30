@@ -1,6 +1,6 @@
 ### Zgodovina najbolj poslušanih Spotify izvajalecev
 
-Vizualizacija je na voljo na povezavi: [https://jakaskerjanc.github.io/spotify-visualized/](https://jakaskerjanc.github.io/spotify-visualized/)
+Vizualizacija je na voljo na povezavi: [https://jakaskerjanc.github.io/spotify_visualized/](https://jakaskerjanc.github.io/spotify_visualized/)
 
 ### Podatki
 Podatki o poslušanih pesmih so pridobljeni iz Spotify-ja, kjer lahko prenesemo "Extended Streaming History". Podakti vsebujejo vse predvajanje pesmi in čas poslušanja.
